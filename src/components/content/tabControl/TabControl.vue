@@ -27,6 +27,7 @@ export default {
    methods:{
      activeSpan(index) {
        this.currentIndex = index
+       this.$emit('tabClick',index)
      }
    }
 }

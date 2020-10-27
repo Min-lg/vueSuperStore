@@ -29,7 +29,7 @@ export default {
 .goods {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around;
+    justify-content: space-evenly;
     background-color: var(--color-background);
     
     padding: 2px;
