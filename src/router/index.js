@@ -3,10 +3,11 @@ import VueRouter from 'vue-router'
 // import Home from '../views/Home.vue'
 
 
-const Home = ()=>import('views/home/Home')
-const Classify = ()=>import('views/classify/Classify')
-const Shop = ()=>import('views/shop/Shop')
-const My = ()=>import('views/my/My')
+const Home = () => import('views/home/Home')
+const Classify = () => import('views/classify/Classify')
+const Shop = () => import('views/shop/Shop')
+const My = () => import('views/my/My')
+const Detail = () => import('views/detail/Detail')
 
 Vue.use(VueRouter);
 
@@ -19,7 +20,7 @@ const routes = [
     path: '/',
     component: Home,
   },
-  
+
   {
     path: '/home',
     component: Home
@@ -35,6 +36,10 @@ const routes = [
   {
     path: '/my',
     component: My
+  },
+  {
+    path: '/detail/:id',
+    component: Detail
   }
 ]
 

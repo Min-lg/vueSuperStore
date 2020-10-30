@@ -80,6 +80,7 @@ export default {
       isShowBackTop: false,
       tabOffsetTop: 0,
       isTabControlTop: false,
+      saveY: 0
     };
   },
   created() {
@@ -95,6 +96,18 @@ export default {
     this.$bus.$on("itemImageLoad", () => {
       refresh();
     });
+  },
+  // 组件激活时调用，配合keep-alive
+  activated() {
+    // 调用方法跳转至离开时的位置
+    this.$refs.scroll.scrollTo(0,this.saveY,0)
+    // 刷新scroll
+    this.$refs.scroll.refresh()
+  },
+  // 组件停用时调用，配合keep-alive
+  deactivated() {
+    // 记录离开时的scroll--的Y值
+    this.saveY = this.$refs.scroll.getScrollY()
   },
   methods: {
     /* 
