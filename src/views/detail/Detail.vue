@@ -1,10 +1,23 @@
 <template>
   <div id="detail">
-    <detail-nav-bar></detail-nav-bar>
-    <!-- 切记，给子组件传值时，驼峰名命要用-连接 -->
-    <detail-swiper :top-images="topImages"></detail-swiper>
-    <detail-goods :goods="goods"></detail-goods>
-    <detail-shop-info :shop="shop" />
+    <detail-nav-bar
+      class="detail-nav"
+      @titleClick="detailTitleClick"
+      ref="nav"
+    />
+    <scroll class="content" ref="scroll" :probe-type="3" @scroll="detailScroll">
+      <!-- 切记，给子组件传值时，驼峰名命要用-连接 -->
+      <detail-swiper :top-images="topImages" />
+      <detail-goods :goods="goods" />
+      <detail-shop-info :shop="shop" />
+      <detail-goods-info
+        :detail-info="detailInfo"
+        @loadImgEvent="imgLoadList"
+      />
+      <detail-params ref="params" :paramInfo="paramInfo" />
+      <detail-comment ref="comment" :comment="comment" />
+      <goods-list ref="recommend" :goods="recommend" />
+    </scroll>
   </div>
 </template>
 <script>
@@ -12,8 +25,23 @@ import DetailNavBar from "./childComs/DetailNavBar";
 import DetailSwiper from "./childComs/DetailSwiper";
 import DetailGoods from "./childComs/DetailGoods";
 import DetailShopInfo from "./childComs/DetailShopInfo";
+import DetailGoodsInfo from "./childComs/DetailGoodsInfo";
+import DetailParams from "./childComs/DetailParams.vue";
+import DetailComment from "./childComs/DetailComment.vue";
+import Scroll from "components/common/scroll/Scroll.vue";
+import GoodsList from "components/content/goods/GoodsList";
 
-import { getDetail, Goods,Shop } from "network/detail";
+import {
+  getDetail,
+  Goods,
+  Shop,
+  GoodsParam,
+  getDetailRecommend,
+} from "network/detail";
+// 引入混入文件
+import { itemListenerMixin } from "common/mixin";
+// 防抖
+import { debounce } from "common/utils";
 
 export default {
   name: "Detail",
@@ -22,13 +50,26 @@ export default {
     DetailSwiper,
     DetailGoods,
     DetailShopInfo,
+    DetailGoodsInfo,
+    DetailParams,
+    DetailComment,
+    GoodsList,
+    Scroll,
   },
+  mixins: [itemListenerMixin],
   data() {
     return {
       iid: null,
       topImages: [],
       goods: {},
       shop: {},
+      detailInfo: {},
+      paramInfo: {},
+      comment: {},
+      recommend: [],
+      themeTopYs: [],
+      getThemeTopY: null,
+      currentIndex: 0,
     };
   },
   created() {
@@ -46,11 +87,97 @@ export default {
         data.shopInfo.services
       );
       // 获取店铺信息
-      this.shop = new Shop(data.shopInfo)
+      this.shop = new Shop(data.shopInfo);
+      //获取宝贝的详细信息
+      this.detailInfo = data.detailInfo;
+      // 获取参数信息
+      this.paramInfo = new GoodsParam(
+        data.itemParams.info,
+        data.itemParams.rule
+      );
+      //获取评论
+      if (data.rate.cRate != 0) {
+        this.comment = data.rate.list[0];
+      }
+      // 获取推荐数据
+      this.getDetailRecommend();
+
+      // 使用$nextTick方法,组件的dom渲染完成
+      // this.$nextTick(() => {
+      //   this.themeTopYs = [];
+      //   this.themeTopYs.push(0);
+      //   this.themeTopYs.push(this.$refs.params.$el.offsetTop);
+      //   this.themeTopYs.push(this.$refs.comment.$el.offsetTop);
+      //   this.themeTopYs.push(this.$refs.recommend.$el.offsetTop);
+      //   console.log(this.themeTopYs);
+      // });
     });
+    // 给getThemeTopY赋值,并添加防抖,在图片加载完成后调用函数
+    this.getThemeTopY = debounce(() => {
+      this.themeTopYs = [];
+      this.themeTopYs.push(0);
+      this.themeTopYs.push(this.$refs.params.$el.offsetTop - 45);
+      this.themeTopYs.push(this.$refs.comment.$el.offsetTop - 45);
+      this.themeTopYs.push(this.$refs.recommend.$el.offsetTop - 45);
+    }, 100);
   },
-  methods: {},
+  destroyed() {
+    // 取消全局事件监听,事件名，要取消的方法，如不传入要取消的函数，则全局取消，这里不能，detail要用
+    this.$bus.$off("itemImageLoad", this.itemImgListener);
+  },
+  methods: {
+    imgLoadList() {
+      // 监听子组件图片加载,目的:刷新scroll
+      this.refresh();
+      // 调用getThemeTopY
+      this.getThemeTopY();
+    },
+    // 获取推荐数据
+    async getDetailRecommend() {
+      let res = await getDetailRecommend();
+      this.recommend = res.data.data.list;
+    },
+    // 当前navbar点击的下标元素
+    detailTitleClick(index) {
+      console.log(index);
+      this.$refs.scroll.scrollTo(0, -this.themeTopYs[index], 200);
+    },
+    // 监听scroll
+    detailScroll(res) {
+      // 获取Y的值
+      const resY = -res.y;
+      // console.log(resY);
+      let length = this.themeTopYs.length;
+      // console.log(length);
+      for (let i = 0; i < length; i++) {
+        if (
+          this.currentIndex !== i &&
+          ((i < length - 1 &&
+            resY >= this.themeTopYs[i] &&
+            resY < this.themeTopYs[i + 1]) ||
+            (i === length - 1 && resY >= this.themeTopYs[i]))
+        ) {
+          this.currentIndex = i;
+          this.$refs.nav.currentIndex = this.currentIndex;
+        }
+      }
+    },
+  },
 };
 </script>
 <style scoped>
+#detail {
+  position: relative;
+  z-index: 9;
+  background-color: #fff;
+  height: 100vh;
+}
+.detail-nav {
+  position: relative;
+  z-index: 9;
+  background-color: #fff;
+}
+.content {
+  height: calc(100% - 44px);
+}
 </style>

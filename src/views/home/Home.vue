@@ -53,7 +53,7 @@ import BackTop from "components/content/backTop/BackTop";
 
 // 工具导入
 import { getHomeMultidata, getHomeGoods } from "network/home.js";
-import { debounce } from "common/utils";
+import { itemListenerMixin } from "common/mixin";
 
 export default {
   name: "Home",
@@ -67,6 +67,7 @@ export default {
     Scroll,
     BackTop,
   },
+  mixins: [itemListenerMixin],
   data() {
     return {
       banners: [],
@@ -80,7 +81,7 @@ export default {
       isShowBackTop: false,
       tabOffsetTop: 0,
       isTabControlTop: false,
-      saveY: 0
+      saveY: 0,
     };
   },
   created() {
@@ -90,24 +91,20 @@ export default {
     this.getHomeGoods("sell");
   },
   mounted() {
-    // 1、防抖
-    const refresh = debounce(this.$refs.scroll.refresh, 50);
-    // 监听item的image加载完成
-    this.$bus.$on("itemImageLoad", () => {
-      refresh();
-    });
   },
   // 组件激活时调用，配合keep-alive
   activated() {
     // 调用方法跳转至离开时的位置
-    this.$refs.scroll.scrollTo(0,this.saveY,0)
+    this.$refs.scroll.scrollTo(0, this.saveY, 0);
     // 刷新scroll
-    this.$refs.scroll.refresh()
+    this.$refs.scroll.refresh();
   },
   // 组件停用时调用，配合keep-alive
   deactivated() {
     // 记录离开时的scroll--的Y值
-    this.saveY = this.$refs.scroll.getScrollY()
+    this.saveY = this.$refs.scroll.getScrollY();
+    // 取消全局事件监听,事件名，要取消的方法，如不传入要取消的函数，则全局取消，这里不能，detail要用
+    this.$bus.$off("itemImageLoad", this.itemImgListener);
   },
   methods: {
     /* 

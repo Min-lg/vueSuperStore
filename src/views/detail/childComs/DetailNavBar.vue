@@ -28,6 +28,7 @@ export default {
     // 当前title点击
     titleClick(index) {
       this.currentIndex = index
+      this.$emit('titleClick',index)
     },
     // 返回上级
     toBack() {
