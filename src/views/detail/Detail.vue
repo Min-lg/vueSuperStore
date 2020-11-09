@@ -5,6 +5,7 @@
       @titleClick="detailTitleClick"
       ref="nav"
     />
+
     <scroll class="content" ref="scroll" :probe-type="3" @scroll="detailScroll">
       <!-- 切记，给子组件传值时，驼峰名命要用-连接 -->
       <detail-swiper :top-images="topImages" />
@@ -18,6 +19,8 @@
       <detail-comment ref="comment" :comment="comment" />
       <goods-list ref="recommend" :goods="recommend" />
     </scroll>
+    <back-top @click.native="backtop" v-show="isShowBackTop" />
+    <detail-bottom-bar @addEvent="addToCart" />
   </div>
 </template>
 <script>
@@ -28,6 +31,7 @@ import DetailShopInfo from "./childComs/DetailShopInfo";
 import DetailGoodsInfo from "./childComs/DetailGoodsInfo";
 import DetailParams from "./childComs/DetailParams.vue";
 import DetailComment from "./childComs/DetailComment.vue";
+import DetailBottomBar from "./childComs/DetailBottomBar.vue";
 import Scroll from "components/common/scroll/Scroll.vue";
 import GoodsList from "components/content/goods/GoodsList";
 
@@ -39,9 +43,11 @@ import {
   getDetailRecommend,
 } from "network/detail";
 // 引入混入文件
-import { itemListenerMixin } from "common/mixin";
+import { itemListenerMixin, backTopMinxin } from "common/mixin";
 // 防抖
 import { debounce } from "common/utils";
+// 辅助函数
+import { mapActions } from "vuex";
 
 export default {
   name: "Detail",
@@ -53,10 +59,11 @@ export default {
     DetailGoodsInfo,
     DetailParams,
     DetailComment,
+    DetailBottomBar,
     GoodsList,
     Scroll,
   },
-  mixins: [itemListenerMixin],
+  mixins: [itemListenerMixin, backTopMinxin],
   data() {
     return {
       iid: null,
@@ -119,6 +126,7 @@ export default {
       this.themeTopYs.push(this.$refs.params.$el.offsetTop - 45);
       this.themeTopYs.push(this.$refs.comment.$el.offsetTop - 45);
       this.themeTopYs.push(this.$refs.recommend.$el.offsetTop - 45);
+      this.themeTopYs.push(Number.MAX_VALUE); //JS中的最大值
     }, 100);
   },
   destroyed() {
@@ -126,6 +134,7 @@ export default {
     this.$bus.$off("itemImageLoad", this.itemImgListener);
   },
   methods: {
+    ...mapActions(['addCart']),
     imgLoadList() {
       // 监听子组件图片加载,目的:刷新scroll
       this.refresh();
@@ -139,28 +148,41 @@ export default {
     },
     // 当前navbar点击的下标元素
     detailTitleClick(index) {
-      console.log(index);
       this.$refs.scroll.scrollTo(0, -this.themeTopYs[index], 200);
     },
     // 监听scroll
     detailScroll(res) {
       // 获取Y的值
       const resY = -res.y;
-      // console.log(resY);
       let length = this.themeTopYs.length;
-      // console.log(length);
       for (let i = 0; i < length; i++) {
         if (
           this.currentIndex !== i &&
-          ((i < length - 1 &&
-            resY >= this.themeTopYs[i] &&
-            resY < this.themeTopYs[i + 1]) ||
-            (i === length - 1 && resY >= this.themeTopYs[i]))
+          resY >= this.themeTopYs[i] &&
+          resY < this.themeTopYs[i + 1]
         ) {
           this.currentIndex = i;
           this.$refs.nav.currentIndex = this.currentIndex;
         }
       }
+      this.isShowBackTop = resY > 1000;
+    },
+    // 添加到购物车
+    addToCart() {
+      //把信息发送到vuex里
+      const obj = {
+        iid: this.iid,
+        desc: this.goods.desc,
+        price: this.goods.lowNowPrice,
+        title: this.goods.title,
+        img: this.topImages[0],
+      };
+      // 分发vuex  actions进行逻辑运算
+      // this.$store.dispatch("addCart", obj);
+      this.addCart(obj).then(res=>{
+        // 调用已注册模板组件
+        this.$toast.show(res,1200)
+      })
     },
   },
 };
@@ -178,6 +200,6 @@ export default {
   background-color: #fff;
 }
 .content {
-  height: calc(100% - 44px);
+  height: calc(100% - 44px - 2.09rem);
 }
 </style>

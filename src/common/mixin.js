@@ -1,5 +1,7 @@
 import { debounce } from "common/utils";
+import BackTop from "components/content/backTop/BackTop";
 
+// 详情展示混入
 export const itemListenerMixin = {
   data() {
     return {
@@ -18,3 +20,23 @@ export const itemListenerMixin = {
     this.$bus.$on("itemImageLoad", this.itemImgListener);
   }
 }
+
+// 回到顶部混入
+/**
+ * 回到顶部minxin封装
+ */
+export const backTopMinxin = {
+  components: {
+    BackTop
+  },
+  data() {
+    return {
+      isShowBackTop: false
+    };
+  },
+  methods: {
+    backtop() {
+      this.$refs.scroll.scrollTo(0, 0);
+    }
+  }
+};

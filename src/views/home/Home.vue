@@ -49,11 +49,10 @@ import TabControl from "components/content/tabControl/TabControl";
 // goods
 import GoodsList from "components/content/goods/GoodsList";
 import Scroll from "components/common/scroll/Scroll.vue";
-import BackTop from "components/content/backTop/BackTop";
 
 // 工具导入
 import { getHomeMultidata, getHomeGoods } from "network/home.js";
-import { itemListenerMixin } from "common/mixin";
+import { itemListenerMixin,backTopMinxin } from "common/mixin";
 
 export default {
   name: "Home",
@@ -64,10 +63,9 @@ export default {
     FeatureView,
     TabControl,
     GoodsList,
-    Scroll,
-    BackTop,
+    Scroll
   },
-  mixins: [itemListenerMixin],
+  mixins: [itemListenerMixin,backTopMinxin],
   data() {
     return {
       banners: [],
@@ -78,7 +76,6 @@ export default {
         sell: { page: 0, list: [] },
       },
       currentType: "pop",
-      isShowBackTop: false,
       tabOffsetTop: 0,
       isTabControlTop: false,
       saveY: 0,
@@ -126,11 +123,6 @@ export default {
       // 保证俩个tabcontrol的当前点击样式同步
       this.$refs.tabControl1.currentIndex = res;
       this.$refs.tabControl2.currentIndex = res;
-    },
-    // 回到顶部
-    backtop() {
-      // 当前ref为scroll的对象的scrollTo方法
-      this.$refs.scroll.scrollTo(0, 0);
     },
     // 监听滚动距离
     scrollY(res) {
